@@ -31,7 +31,7 @@ let borderPadding = borderUISize / 3;
 let keyESC, keyUP, keyDOWN, keyLEFT, keyRIGHT, keyQ, keyW, keyE, keyR, keyA, keyS, keyD, keyF;
 // set text configs
 let menuConfig = {
-    fontFamily: 'CustomFont',
+    fontFamily: 'Orbitron',
     fontSize: '28px',
     color: '#ffffff',
     shadow: {
@@ -48,7 +48,7 @@ let menuConfig = {
     fixedWidth: 0
 }
 let scoreConfig = {
-    fontFamily: 'CustomFont',
+    fontFamily: 'Orbitron',
     fontSize: '40px',
     color: '#ffffff',
     shadow: {
@@ -65,7 +65,7 @@ let scoreConfig = {
     fixedWidth: 100
 }
 let timerConfig = {
-    fontFamily: 'CustomFont',
+    fontFamily: 'Orbitron',
     fontSize: '40px',
     color: '#ffffff',
     shadow: {
@@ -78,7 +78,7 @@ let timerConfig = {
     fixedWidth: 0
 }
 let letterConfig = {
-    fontFamily: 'CustomFont',
+    fontFamily: 'Orbitron',
     fontSize: '28px',
     color: '#000000',
     align: 'center',

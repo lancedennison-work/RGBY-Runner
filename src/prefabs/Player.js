@@ -5,8 +5,7 @@ class Player extends Phaser.Physics.Arcade.Sprite {
         // add object to existing scene
         this.scene.add.existing(this);
         this.scene.physics.add.existing(this);
-        this.setDisplaySize(21.6, 21.6);
-        this.setCircle(75, 33, 33);
+        this.setCircle(12.5, 0, 0);
         this.acceleration = 100;
         this.create();
     }

@@ -3,7 +3,7 @@ let config = {
     width: 1280,
     height: 720,
     backgroundColor: '#CECECE',
-    pixelArt: true,
+    pixelArt: false,
     // Sets game scaling
     scale: {
         // Fit to window

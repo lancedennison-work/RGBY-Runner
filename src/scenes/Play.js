@@ -145,10 +145,9 @@ class Play extends Phaser.Scene {
             this.block2.y = this.player.y;
             //update timer
             this.timer.text = Math.floor(this.gameTime / 1000);
-            // this.background.tilePositionX += 5;
             this.handleKeys();
             this.checkBlocks();
-            //this.checkCollision();
+            this.checkCollision();
             this.player.update();
         }
         else

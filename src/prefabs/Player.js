@@ -6,12 +6,16 @@ class Player extends Phaser.Physics.Arcade.Sprite {
         this.scene.add.existing(this);
         this.scene.physics.add.existing(this);
         this.setCircle(12.5, 0, 0);
-        this.acceleration = 100;
+        this.acceleration = 
+        {
+            x: 100,
+            y: 100
+        };
         this.create();
     }
     create() {
         this.body.setMaxSpeed(500);
-        this.body.setDrag(500);
+        this.body.setDrag(1000);
         this.body.setVelocity(0);
         this.body.setCollideWorldBounds(true, 0.5, 0.5);
         this.setDepth(5);
@@ -19,19 +23,19 @@ class Player extends Phaser.Physics.Arcade.Sprite {
     update() {
         if(keyUP.isDown)
         {
-            this.body.setVelocityY(this.body.velocity.y - this.acceleration);
+            this.body.setVelocityY(this.body.velocity.y - this.acceleration.y);
         }
         if(keyDOWN.isDown)
         {
-            this.body.setVelocityY(this.body.velocity.y + this.acceleration);
+            this.body.setVelocityY(this.body.velocity.y + this.acceleration.y);
         }
         if(keyLEFT.isDown)
         {
-            this.body.setVelocityX(this.body.velocity.x - this.acceleration);
+            this.body.setVelocityX(this.body.velocity.x - this.acceleration.x);
         }
         if(keyRIGHT.isDown)
         {
-            this.body.setVelocityX(this.body.velocity.x + this.acceleration);
+            this.body.setVelocityX(this.body.velocity.x + this.acceleration.x);
         }
     }
     setColor(c)

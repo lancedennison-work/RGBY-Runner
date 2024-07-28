@@ -45,6 +45,8 @@ class Play extends Phaser.Scene {
         this.D.setBackgroundColor(blueHex);
         this.F.setBackgroundColor(yellowHex);
         this.score = 0;
+        this.scorePoints = 100;
+        this.scoreMultiplier = 1;
         this.scorePlayer = this.add.text(game.config.width - 20, 15, this.score, scoreConfig).setDepth(2).setOrigin(1, 0);
         //-----------------------------------------------------------------------------------------
         //  SETUP VARS
@@ -56,8 +58,8 @@ class Play extends Phaser.Scene {
         this.blockSize = 300;
         this.blockER = {
             blockNumber: 0,
-            spawnDelay: 2500,
-            timeGate: 5000,
+            spawnDelay: 2000,
+            timeGate: 2000,
             spawnGate: 0,
             max: false,
             count: 1,
@@ -120,10 +122,10 @@ class Play extends Phaser.Scene {
         //  SPAWN
         //-----------------------------------------------------------------------------------------
         this.player = new Player(this, game.config.width/3, game.config.height/2, 'playerSprite');
-        this.block1 = this.add.rectangle(game.config.width/3, game.config.height/2, game.config.width*1.5, game.config.height*3, lightFILL).setOrigin(0, 0.5);
-        this.block1.setAngle(45);
-        this.block2 = this.add.rectangle(game.config.width/3, game.config.height/2, game.config.width*1.5, game.config.height*3, lightFILL).setOrigin(0, 0.5);
-        this.block2.setAngle(-45);
+        this.block1 = this.add.rectangle(game.config.width/3, game.config.height/2, game.config.width*1.5, game.config.height*4, lightFILL).setOrigin(0, 0.5);
+        this.block1.setAngle(75);
+        this.block2 = this.add.rectangle(game.config.width/3, game.config.height/2, game.config.width*1.5, game.config.height*4, lightFILL).setOrigin(0, 0.5);
+        this.block2.setAngle(-75);
         this.spawn();
     }
     //-----------------------------------------------------------------------------------------
@@ -336,14 +338,15 @@ class Play extends Phaser.Scene {
         }
     }
     scorePass() {
-        this.score += 10;
+        let points = this.scorePoints * this.scoreMultiplier;
+        this.score += points;
         this.scorePlayer.setText(this.score);
-        let text = this.add.text(game.config.width - 110, this.scorePlayer.y + 45, "+10!", scoreConfig);
+        let text = this.add.text(game.config.width - 10, this.scorePlayer.y + 75, "+" + points + "!", scoreConfig).setOrigin(1);
         text.setFontSize(17);
         this.tweens.add({
             targets: text,
             alpha: 0,
-            duration: 1000, // duration in milliseconds
+            duration: 1500, // duration in milliseconds
             ease: 'Linear',
             onComplete: () => { text.destroy() } // when the tween is complete
         });
@@ -386,15 +389,20 @@ class Play extends Phaser.Scene {
     blockSpawner() {
         if(this.gameTime > this.blockER.timeGate)
         {
-            this.blockER.timeGate += 5000;
+            this.blockER.timeGate += 2000;
             if(!this.blockER.max && this.blockER.spawnDelay > 500) {
-                this.blockER.spawnDelay -= 50;
+                this.blockER.spawnDelay -= 100;
+                this.scorePoints += 50;
                 console.log(this.blockER.spawnDelay);
             }
             else if(!this.blockER.max)
                 {this.blockER.max = true;}
             else if(this.blockER.count < 4)
-            {this.blockER.count++;console.log(this.blockER.count);}
+            {
+                this.blockER.timeGate += 8000;
+                this.blockER.count++;
+                this.scoreMultiplier++;
+            }
         }
         if(this.gameTime > this.blockER.spawnGate)
         {
@@ -480,5 +488,4 @@ class Play extends Phaser.Scene {
             this.yellowGroup.add(new Block(this, game.config.width + 60, rH, 20, tall, yellowFILL, this.blockAlpha.yellow), true);
         }
     }
-    
 }

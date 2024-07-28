@@ -21,7 +21,7 @@ let config = {
             }
         }
     },
-    scene: [ Menu, Play ]
+    scene: [ Menu, Play, Tutorial ]
 }
 let game = new Phaser.Game(config);
 // set UI sizes
@@ -57,12 +57,11 @@ let scoreConfig = {
         offsetY: 4,
         fill: true
     },
-    align: 'center',
+    align: 'right',
     padding: {
     x: 10,
     y: 5
     },
-    fixedWidth: 100
 }
 let timerConfig = {
     fontFamily: 'Orbitron',

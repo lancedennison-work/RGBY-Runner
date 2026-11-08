@@ -44,6 +44,18 @@ class Tutorial extends Phaser.Scene {
         this.S.setBackgroundColor(greenHex);
         this.D.setBackgroundColor(blueHex);
         this.F.setBackgroundColor(yellowHex);
+        // embossed bevel on each key box, shown only while the background matches its color
+        this.keyBevels = [];
+        [[this.Q, redFILL, redHex], [this.W, greenFILL, greenHex], [this.E, blueFILL, blueHex], [this.R, yellowFILL, yellowHex],
+         [this.A, redFILL, redHex], [this.S, greenFILL, greenHex], [this.D, blueFILL, blueHex], [this.F, yellowFILL, yellowHex]
+        ].forEach(([key, fill, hex]) => {
+            const g = this.add.graphics().setDepth(3);
+            Block.drawBevel(g, key.width, key.height, fill);
+            const c = key.getCenter();
+            g.setPosition(c.x, c.y);
+            g.setVisible(false);
+            this.keyBevels.push({ g: g, hex: hex });
+        });
         this.score = 0;
         this.scorePoints = 100;
         this.scoreMultiplier = 1;
@@ -55,16 +67,6 @@ class Tutorial extends Phaser.Scene {
         this.color = lightHex;
         this.colorFill = lightFILL;
         this.speed = -500;
-        this.blockSize = 300;
-        this.blockER = {
-            blockNumber: 0,
-            spawnDelay: 2000,
-            timeGate: 2000,
-            spawnGate: 0,
-            max: false,
-            count: 1,
-        }
-        this.spawnTimer;
         this.redOver = false;
         this.greenOver = false;
         this.blueOver = false;
@@ -114,10 +116,12 @@ class Tutorial extends Phaser.Scene {
         this.greenGroup = this.physics.add.group(this.groupConfig);
         this.blueGroup = this.physics.add.group(this.groupConfig);
         this.yellowGroup = this.physics.add.group(this.groupConfig);
+        this.blackGroup = this.physics.add.group(this.groupConfig);  // always deadly, dodge only
         this.physics.add.collider(this.redGroup);
         this.physics.add.collider(this.greenGroup);
         this.physics.add.collider(this.blueGroup);
         this.physics.add.collider(this.yellowGroup);
+        this.physics.add.collider(this.blackGroup);
         //-----------------------------------------------------------------------------------------
         //  SPAWN
         //-----------------------------------------------------------------------------------------
@@ -126,7 +130,8 @@ class Tutorial extends Phaser.Scene {
         this.block1.setAngle(75);
         this.block2 = this.add.rectangle(game.config.width/3, game.config.height/2, game.config.width*1.5, game.config.height*4, lightFILL).setOrigin(0, 0.5);
         this.block2.setAngle(-75);
-        this.spawn();
+        // pattern spawner + score ramp (see src/systems/PatternSpawner.js)
+        this.spawner = new PatternSpawner(this);
     }
     //-----------------------------------------------------------------------------------------
     //-----------------------------------------------------------------------------------------
@@ -156,13 +161,16 @@ class Tutorial extends Phaser.Scene {
         {//goto menu input
             if (Phaser.Input.Keyboard.JustDown(keyLEFT)) {
                 this.scene.start("menuScene");
+            }
+            else if (Phaser.Input.Keyboard.JustDown(keyRIGHT)) {
+                this.scene.restart();
+            }
         }
-        }
-        // check key input for restart
+        // ESC always goes back to the main menu
         if (Phaser.Input.Keyboard.JustDown(keyESC)) {
-            this.scene.restart();
+            this.scene.start("menuScene");
         }
-        this.blockSpawner();
+        this.spawner.update(this.gameTime);
     }
     //-----------------------------------------------------------------------------------------
     //-----------------------------------------------------------------------------------------
@@ -173,7 +181,7 @@ class Tutorial extends Phaser.Scene {
         this.gameOver = true;
         //game over text
         this.add.text(game.config.width/2, game.config.height/2, 'GAME OVER', menuConfig).setOrigin(0.5).setDepth(2);
-        this.add.text(game.config.width/2, game.config.height/2 + 64, 'Press (ESC) to Restart or ← for Menu', menuConfig).setOrigin(0.5).setDepth(2);
+        this.add.text(game.config.width/2, game.config.height/2 + 64, 'Press ← for Menu or → to Restart', menuConfig).setOrigin(0.5).setDepth(2);
         //destroy trail
         this.background.destroy();
         this.block1.destroy();
@@ -256,6 +264,7 @@ class Tutorial extends Phaser.Scene {
     }
     changBackground() {
         this.cameras.main.setBackgroundColor(this.color);
+        this.keyBevels.forEach(b => b.g.setVisible(b.hex == this.color));
         this.block1.fillColor = this.colorFill;
         this.block2.fillColor = this.colorFill;
     }
@@ -263,6 +272,8 @@ class Tutorial extends Phaser.Scene {
         //check collisions
         if(!this.gameOver)
         {
+            //black: deadly in every color
+            this.physics.world.collide(this.player, this.blackGroup, () => this.dead());
             //red
             if(this.color != redHex)
             {
@@ -377,6 +388,14 @@ class Tutorial extends Phaser.Scene {
                 }
             });
         }
+        if(this.blackGroup.getLength() > 0)
+        {
+            this.blackGroup.getChildren().forEach(function(member) {
+                if (member.x < -50) {
+                    member.destroy();
+                }
+            });
+        }
         if(this.yellowGroup.getLength() > 0)
         {
             this.yellowGroup.getChildren().forEach(function(member) {
@@ -384,108 +403,6 @@ class Tutorial extends Phaser.Scene {
                     member.destroy();
                 }
             });
-        }
-    }
-    blockSpawner() {
-        if(this.gameTime > this.blockER.timeGate)
-        {
-            this.blockER.timeGate += 2000;
-            if(!this.blockER.max && this.blockER.spawnDelay > 500) {
-                this.blockER.spawnDelay -= 100;
-                this.scorePoints += 50;
-                console.log(this.blockER.spawnDelay);
-            }
-            else if(!this.blockER.max)
-                {this.blockER.max = true;}
-            else if(this.blockER.count < 4)
-            {
-                this.blockER.timeGate += 8000;
-                this.blockER.count++;
-                this.scoreMultiplier++;
-            }
-        }
-        if(this.gameTime > this.blockER.spawnGate)
-        {
-            this.blockER.spawnGate += this.blockER.spawnDelay;
-            //spawn a new block
-            for(let i=0; i < this.blockER.count; i++)
-                this.spawn();
-        }
-    }
-    spawn() {
-        this.groupConfig.velocityX = this.speed;
-        this.redGroup.setVelocityX(this.speed);
-        this.greenGroup.setVelocityX(this.speed);
-        this.blueGroup.setVelocityX(this.speed);
-        this.yellowGroup.setVelocityX(this.speed);
-    
-        let rC, rH;
-        let tall = this.blockSize * (1 / this.blockER.count);
-        
-        let validRange = {
-            min: 10 + tall/2,
-            max: game.config.height - tall/2 - 10
-        }
-        validRange.max -= validRange.min;
-    
-        // Choose a random color
-        rC = Math.floor(Math.random() * 4) + 1;
-    
-        let overlap = true;
-        let newBlock = null;
-        let tries = 0;
-        
-        while (overlap) {
-            // Choose a random height
-            rH = (Math.random() * validRange.max) + validRange.min;
-            
-            // Create a temporary block for overlap checking
-            let tempFill = (rC == 1) ? redFILL : (rC == 2) ? greenFILL : (rC == 3) ? blueFILL : yellowFILL;
-            newBlock = new Block(this, game.config.width + 60, rH, 20, tall, tempFill); // Use dynamic fill color
-            
-            overlap = false;
-            this.redGroup.getChildren().forEach(child => {
-                if (Phaser.Geom.Intersects.RectangleToRectangle(newBlock.getBounds(), child.getBounds())) {
-                    overlap = true;
-                }
-            });
-            this.greenGroup.getChildren().forEach(child => {
-                if (Phaser.Geom.Intersects.RectangleToRectangle(newBlock.getBounds(), child.getBounds())) {
-                    overlap = true;
-                }
-            });
-            this.blueGroup.getChildren().forEach(child => {
-                if (Phaser.Geom.Intersects.RectangleToRectangle(newBlock.getBounds(), child.getBounds())) {
-                    overlap = true;
-                }
-            });
-            this.yellowGroup.getChildren().forEach(child => {
-                if (Phaser.Geom.Intersects.RectangleToRectangle(newBlock.getBounds(), child.getBounds())) {
-                    overlap = true;
-                }
-            });
-    
-            // Destroy the temporary block if it overlaps
-            if (overlap) {
-                newBlock.destroy();
-            }
-            tries++;
-            if(tries > 10)
-                return;
-        }
-
-        // Add the block to the appropriate group
-        if (rC == 1) {
-            this.redGroup.add(new Block(this, game.config.width + 60, rH, 20, tall, redFILL, this.blockAlpha.red), true);
-        }
-        if (rC == 2) {
-            this.greenGroup.add(new Block(this, game.config.width + 60, rH, 20, tall, greenFILL, this.blockAlpha.green), true);
-        }
-        if (rC == 3) {
-            this.blueGroup.add(new Block(this, game.config.width + 60, rH, 20, tall, blueFILL, this.blockAlpha.blue), true);
-        }
-        if (rC == 4) {
-            this.yellowGroup.add(new Block(this, game.config.width + 60, rH, 20, tall, yellowFILL, this.blockAlpha.yellow), true);
         }
     }
 }

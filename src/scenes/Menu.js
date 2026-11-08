@@ -13,7 +13,39 @@ class Menu extends Phaser.Scene {
         // show menu text
         this.add.text(game.config.width/2, 30, 'Made by Lance Dennison', menuConfig).setOrigin(0.5);
         this.add.text(game.config.width/2, game.config.height - 30, '!!!FLASHING COLORS WARNING!!!', menuConfig).setOrigin(0.5).setColor(darkHex);
-        this.add.text(game.config.width/2, game.config.height/2 - 75, 'RGBY Runner', menuConfig).setOrigin(0.5).setFontSize(80);
+        // title: R, G, B and Y in their own colors, laid out left to right and centered as a whole
+        const titleConfig = Object.assign({}, menuConfig, { fontSize: '80px', padding: { x: 0, y: 5 } });
+        // each colored letter is embossed: a lighter copy up-left and a darker copy down-right
+        // (shades of its own color) sit behind the letter, matching the blocks' bevel direction
+        const emboss = 3;
+        this.titleBevels = [];
+        const shade = (fill, light) => {
+            const c = Phaser.Display.Color.IntegerToColor(fill);
+            return '#' + (light ? c.lighten(35) : c.darken(35)).color.toString(16).padStart(6, '0');
+        };
+        const titleParts = [['R', redHex, redFILL], ['G', greenHex, greenFILL], ['B', blueHex, blueFILL], ['Y', yellowHex, yellowFILL], [' Runner', menuConfig.color]];
+        const titleY = game.config.height/2 - 75;
+        const titleTexts = titleParts.map(([str, color, fill]) => {
+            const layers = [];   // [text, x offset, y offset], back to front
+            if(fill !== undefined) {
+                layers.push([this.add.text(0, titleY, str, titleConfig).setOrigin(0, 0.5).setColor(shade(fill, false)).setShadow(0, 0, '#000000', 0, false, false), emboss, emboss]);
+                layers.push([this.add.text(0, titleY, str, titleConfig).setOrigin(0, 0.5).setColor(shade(fill, true)).setShadow(0, 0, '#000000', 0, false, false), -emboss, -emboss]);
+                layers.push([this.add.text(0, titleY, str, titleConfig).setOrigin(0, 0.5).setColor(color).setShadow(0, 0, '#000000', 0, false, false), 0, 0]);
+                // like the blocks: the bevel only shows while the background matches this letter's color
+                this.titleBevels.push({ texts: [layers[0][0], layers[1][0]], hex: color });
+                layers[0][0].setVisible(this.color == color);
+                layers[1][0].setVisible(this.color == color);
+            }
+            else {
+                layers.push([this.add.text(0, titleY, str, titleConfig).setOrigin(0, 0.5).setColor(color), 0, 0]);
+            }
+            return layers;
+        });
+        let titleX = game.config.width/2 - titleTexts.reduce((sum, layers) => sum + layers[0][0].width, 0) / 2;
+        titleTexts.forEach(layers => {
+            layers.forEach(([t, dx, dy]) => { t.x = titleX + dx; t.y = titleY + dy; });
+            titleX += layers[0][0].width;
+        });
         this.add.text(game.config.width/2 - 100, game.config.height/2 - 25, 'Use 🢀🢁🢂🢃 to move', menuConfig).setOrigin(0.5);
         //letters and boxes for Q-W-E-R
         this.Q = this.add.text(QWER.x, QWER.y, 'Q', letterConfig).setOrigin(0.5);
@@ -41,6 +73,19 @@ class Menu extends Phaser.Scene {
         this.add.text(this.F.x + 25, ASDF.y + 40, 'Press 🢀 for tutorial', menuConfig).setOrigin(0.5);
         //this.add.text(this.F.x + 25, ASDF.y + 40, 'tutorial coming soon!', menuConfig).setOrigin(0.5);
         this.add.text(this.F.x + 25, ASDF.y + 70, 'Press 🢂 to start', menuConfig).setOrigin(0.5);
+        //-----------------------------------------------------------------------------------------------------------------------------
+        // embossed bevel on each key box, shown only while the background matches its color
+        // (the same moment the matching blocks "disappear" in game)
+        this.keyBevels = [];
+        [[this.Q, redFILL, redHex], [this.W, greenFILL, greenHex], [this.E, blueFILL, blueHex], [this.R, yellowFILL, yellowHex],
+         [this.A, redFILL, redHex], [this.S, greenFILL, greenHex], [this.D, blueFILL, blueHex], [this.F, yellowFILL, yellowHex]
+        ].forEach(([key, fill, hex]) => {
+            const g = this.add.graphics();
+            Block.drawBevel(g, key.width, key.height, fill);
+            g.setPosition(key.x, key.y);
+            g.setVisible(this.color == hex);
+            this.keyBevels.push({ g: g, hex: hex });
+        });
         //-----------------------------------------------------------------------------------------------------------------------------
         //done with letters
         // define keys
@@ -94,5 +139,7 @@ class Menu extends Phaser.Scene {
     }
     changBackground() {
         this.cameras.main.setBackgroundColor(this.color);
+        this.keyBevels.forEach(b => b.g.setVisible(b.hex == this.color));
+        this.titleBevels.forEach(b => b.texts.forEach(t => t.setVisible(b.hex == this.color)));
     }
 }
